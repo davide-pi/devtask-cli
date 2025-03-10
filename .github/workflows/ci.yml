@@ -1,0 +1,32 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - "main"
+  pull_request:
+    branches:
+      - "main"
+
+jobs:
+  build_and_tests:
+    name: Build & Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Restore Packages
+        shell: pwsh
+        run: |
+            dotnet restore .\DevTask.Cli.sln --configfile .\nuget.config
+
+      - name: Build Solution
+        shell: pwsh
+        run: |
+          dotnet build .\DevTask.Cli.sln -c Release --no-restore
+
+      - name: Run Tests
+        shell: pwsh
+        run: |
+          dotnet test .\DevTask.Cli.sln -c Release --no-restore --no-build
