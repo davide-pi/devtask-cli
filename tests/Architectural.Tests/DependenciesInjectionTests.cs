@@ -1,3 +1,5 @@
+using DevTask.Cli.Repositories;
+using DevTask.Cli.Repositories.Abstractions;
 using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
 using System;
@@ -22,12 +24,12 @@ public class DependenciesInjectionTests
         "DevTask.Cli.Models"
     ];
 
-    public static readonly IEnumerable<(Type Type, ServiceLifetime Lifetime)> _expectedInjectedTypesWithLifetimes = [
-        //(typeof(IInterface), ServiceLifetime.Singleton),
+    public static readonly IEnumerable<(Type InerfaceType, Type ImplementationType, ServiceLifetime Lifetime)> _expectedInjectedTypesWithLifetimes = [
+        (typeof(ITasksRepository), typeof(JsonFileTasksRepository), ServiceLifetime.Singleton),
     ];
 
     public static readonly IEnumerable<object[]> ExpectedInjectedTypesWithLifetimes = _expectedInjectedTypesWithLifetimes
-        .Select<(Type Type, ServiceLifetime Lifetime), object[]>(t => [t.Type, t.Lifetime]);
+        .Select<(Type InerfaceType, Type ImplementationType, ServiceLifetime Lifetime), object[]>(t => [t.InerfaceType, t.ImplementationType, t.Lifetime]);
 
     private static readonly IServiceProvider _services = DevTask.Cli.Program.CreateHostBuilder([])
         .Build()
@@ -38,7 +40,7 @@ public class DependenciesInjectionTests
     public void AnyClassOrInterface_Should_Not_BeForgotenInTheInjection()
     {
         var expectedInjectedTypes = _expectedInjectedTypesWithLifetimes
-            .Select(e => e.Type);
+            .Select(e => e.InerfaceType);
 
         var forgottenTypes = _assembly.GetTypes()
             .Where(t => t.IsClass || t.IsInterface)
@@ -57,14 +59,16 @@ public class DependenciesInjectionTests
     [Trait("Category", "L0")]
     [Theory]
     [MemberData(nameof(ExpectedInjectedTypesWithLifetimes))]
-    public void ServiceProvider_Should_ContainsTheServiceWithExpectedLifetime(Type expectedInjectedType, ServiceLifetime lifetime)
+    public void ServiceProvider_Should_ContainsTheServiceWithExpectedLifetime(Type expectedInjectedType, Type expectedImplementationType, ServiceLifetime lifetime)
     {
         var scope = _services.CreateScope();
         var resolved = scope.ServiceProvider.GetService(expectedInjectedType);
 
         resolved
             .Should()
-            .NotBeNull();
+            .NotBeNull()
+            .And
+            .BeAssignableTo(expectedImplementationType);
 
         var resolved2 = scope.ServiceProvider.GetService(expectedInjectedType);
 

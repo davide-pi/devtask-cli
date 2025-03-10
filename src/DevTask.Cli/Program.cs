@@ -1,4 +1,6 @@
 ﻿using DevTask.Cli.HostedServices;
+using DevTask.Cli.Repositories;
+using DevTask.Cli.Repositories.Abstractions;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -29,5 +31,6 @@ public class Program
     private static void ConfigureServices(HostBuilderContext context, IServiceCollection services)
     {
         services.AddHostedService<CommandLine>();
+        services.AddSingleton<ITasksRepository, JsonFileTasksRepository>();
     }
 }
