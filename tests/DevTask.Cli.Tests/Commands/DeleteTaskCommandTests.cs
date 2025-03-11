@@ -9,7 +9,7 @@ using System.Threading;
 using System.Threading.Tasks;
 
 namespace DevTask.Cli.Tests.Commands;
-public class AddTaskCommandTests
+public class DeleteTaskCommandTests
 {
 
     [Trait("Category", "L0")]
@@ -17,7 +17,7 @@ public class AddTaskCommandTests
     [InlineData(typeof(ICommand))]
     public void Should_InheritFrom(Type typeToInherit)
     {
-        typeof(AddTaskCommand)
+        typeof(DeleteTaskCommand)
             .Should()
             .BeAssignableTo(typeToInherit);
     }
@@ -26,9 +26,9 @@ public class AddTaskCommandTests
     [Fact]
     public void Should_DefineItsCommandAs()
     {
-        var expectedCommand = "add";
+        var expectedCommand = "delete";
 
-        var commandField = typeof(AddTaskCommand)
+        var commandField = typeof(DeleteTaskCommand)
             .GetField("Command", BindingFlags.Public | BindingFlags.Static);
 
         commandField!.IsInitOnly
@@ -47,9 +47,9 @@ public class AddTaskCommandTests
     [Fact]
     public void Should_BeDescribedAs()
     {
-        var expectedCommandDescription = "Add a new task to the list";
+        var expectedCommandDescription = "Delete an existing task from the list by its ID";
 
-        var descriptionField = typeof(AddTaskCommand)
+        var descriptionField = typeof(DeleteTaskCommand)
             .GetField("Description", BindingFlags.Public | BindingFlags.Static);
 
         descriptionField!.IsInitOnly
@@ -66,16 +66,17 @@ public class AddTaskCommandTests
 
     [Trait("Category", "L0")]
     [Fact]
-    public async Task Should_AddANewTask_When_Executed()
+    public async Task Should_DeleteTheTask_When_Executed()
     {
+        var taskId = Guid.NewGuid();
         var tasksRepositoryMock = new Mock<ITasksRepository>();
 
-        var command = new AddTaskCommand(tasksRepositoryMock.Object);
+        var command = new DeleteTaskCommand(tasksRepositoryMock.Object);
 
-        await command.ExecuteAsync("test title", CancellationToken.None);
+        await command.ExecuteAsync(taskId.ToString(), CancellationToken.None);
 
         tasksRepositoryMock.Verify(
-            r => r.InsertTaskAsync("test title", It.IsAny<CancellationToken>()),
+            r => r.DeleteTaskAsync(taskId, It.IsAny<CancellationToken>()),
             Times.Once);
     }
 
@@ -87,7 +88,7 @@ public class AddTaskCommandTests
     {
         var tasksRepositoryMock = new Mock<ITasksRepository>();
 
-        var command = new AddTaskCommand(tasksRepositoryMock.Object);
+        var command = new DeleteTaskCommand(tasksRepositoryMock.Object);
 
 #pragma warning disable CS8604 // Possible null reference argument.
         var action = async () => await command.ExecuteAsync(commandArgument, CancellationToken.None);
@@ -96,6 +97,28 @@ public class AddTaskCommandTests
         ( await action
             .Should()
             .ThrowExactlyAsync<ArgumentNullException>() )
+            .And
+            .ParamName
+            .Should()
+            .Be("commandArgument");
+    }
+
+
+    [Trait("Category", "L0")]
+    [Fact]
+    public async Task Should_ThrowArgumentException_When_ExecutedWithNonGuidArgument()
+    {
+        var tasksRepositoryMock = new Mock<ITasksRepository>();
+
+        var command = new DeleteTaskCommand(tasksRepositoryMock.Object);
+
+#pragma warning disable CS8604 // Possible null reference argument.
+        var action = async () => await command.ExecuteAsync("This surely is not a Guid", CancellationToken.None);
+#pragma warning restore CS8604 // Possible null reference argument.
+
+        ( await action
+            .Should()
+            .ThrowExactlyAsync<ArgumentException>() )
             .And
             .ParamName
             .Should()

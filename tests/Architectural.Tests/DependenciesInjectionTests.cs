@@ -33,6 +33,7 @@ public class DependenciesInjectionTests
 
     private static readonly IEnumerable<(string Key, Type InerfaceType, Type ImplementationType, ServiceLifetime Lifetime)> _expectedInjectedKeyedTypesWithLifetimes = [
         ("AddTask", typeof(ICommand), typeof(AddTaskCommand), ServiceLifetime.Singleton),
+        ("DeleteTask", typeof(ICommand), typeof(DeleteTaskCommand), ServiceLifetime.Singleton),
     ];
 
     public static readonly IEnumerable<object[]> ExpectedInjectedTypesWithLifetimes = _expectedInjectedTypesWithLifetimes

@@ -5,14 +5,14 @@ using System.Threading;
 using System.Threading.Tasks;
 
 namespace DevTask.Cli.Commands;
-public sealed class AddTaskCommand : ICommand
+public sealed class DeleteTaskCommand : ICommand
 {
     private readonly ITasksRepository _tasksRepository;
-   
-    public static readonly string Command = "add";
-    public static readonly string Description = "Add a new task to the list";
+    
+    public static readonly string Command = "delete";
+    public static readonly string Description = "Delete an existing task from the list by its ID";
 
-    public AddTaskCommand(ITasksRepository tasksRepository)
+    public DeleteTaskCommand(ITasksRepository tasksRepository)
     {
         _tasksRepository = tasksRepository;
     }
@@ -24,6 +24,11 @@ public sealed class AddTaskCommand : ICommand
             throw new ArgumentNullException(nameof(commandArgument));
         }
 
-        var newTaskId = await _tasksRepository.InsertTaskAsync(commandArgument, cancellationToken);
+        if(!Guid.TryParse(commandArgument, out Guid taskId))
+        {
+            throw new ArgumentException("Argument should be a task ID", nameof(commandArgument));
+        }
+
+        await _tasksRepository.DeleteTaskAsync(taskId, cancellationToken);
     }
 }

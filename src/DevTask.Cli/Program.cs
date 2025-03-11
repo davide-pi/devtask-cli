@@ -35,5 +35,6 @@ public class Program
         services.AddHostedService<CommandLine>();
         services.AddSingleton<ITasksRepository, JsonFileTasksRepository>();
         services.AddKeyedSingleton<ICommand, AddTaskCommand>("AddTask");
+        services.AddKeyedSingleton<ICommand, DeleteTaskCommand>("DeleteTask");
     }
 }
