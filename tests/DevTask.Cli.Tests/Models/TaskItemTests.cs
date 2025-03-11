@@ -15,8 +15,8 @@ public class TaskItemTests
         typeof(TaskItem).GetProperties(BindingFlags.Public | BindingFlags.Instance)
             .Should()
             .Satisfy(
-                static p => p.Name == "Id" & p.PropertyType == typeof(Guid) & p.IsInitOnly(),
-                static p => p.Name == "Title" & p.PropertyType == typeof(string) & p.IsInitOnly()
+                static p => p.Name == "Id" && p.PropertyType == typeof(Guid) && p.IsInitOnly(),
+                static p => p.Name == "Title" && p.PropertyType == typeof(string) && p.IsInitOnly()
             );
     }
 
@@ -33,9 +33,7 @@ public class TaskItemTests
 
     [Trait("Category", "L0")]
     [Theory]
-#pragma warning disable CS8600 // Converting null literal or possible null value to non-nullable type.
-    [InlineData((string)null)]
-#pragma warning restore CS8600 // Converting null literal or possible null value to non-nullable type.
+    [InlineData(null)]
     [InlineData("")]
     public void Should_ThrowAnException_When_ConstructorIscalledWithNullOrEmptyTitle(string? title)
     {
@@ -45,6 +43,10 @@ public class TaskItemTests
 
         action
             .Should()
-            .ThrowExactly<ArgumentNullException>();
+            .ThrowExactly<ArgumentNullException>()
+            .And
+            .ParamName
+            .Should()
+            .Be("title");
     }
 }

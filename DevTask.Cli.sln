@@ -19,6 +19,11 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DevTask.Cli.Tests", "tests\
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Architectural.Tests", "tests\Architectural.Tests\Architectural.Tests.csproj", "{5FA6F542-72E2-48B5-91ED-5C3E66EECDFD}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "workflows", "workflows", "{9BAE173F-B847-4DB6-A197-90EA0F982625}"
+	ProjectSection(SolutionItems) = preProject
+		.github\workflows\ci.yml = .github\workflows\ci.yml
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -45,6 +50,7 @@ Global
 		{F18ED7FE-8EAA-435B-A92A-D8251B428E88} = {02EA681E-C7D8-13C7-8484-4AC65E1B71E8}
 		{866AC9AE-270C-40DC-B0AB-A5B15BA3B56C} = {278EE76B-D664-491E-AAED-4499027A7E64}
 		{5FA6F542-72E2-48B5-91ED-5C3E66EECDFD} = {278EE76B-D664-491E-AAED-4499027A7E64}
+		{9BAE173F-B847-4DB6-A197-90EA0F982625} = {091C1E24-BC43-4037-8B72-1F0BEA093DA0}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {FF0819E0-CAF0-4B5F-97DA-3437A3F2CE58}

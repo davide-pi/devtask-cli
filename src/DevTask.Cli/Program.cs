@@ -1,4 +1,6 @@
-﻿using DevTask.Cli.HostedServices;
+﻿using DevTask.Cli.Commands;
+using DevTask.Cli.Commands.Abstractions;
+using DevTask.Cli.HostedServices;
 using DevTask.Cli.Repositories;
 using DevTask.Cli.Repositories.Abstractions;
 using Microsoft.Extensions.Configuration;
@@ -32,5 +34,6 @@ public class Program
     {
         services.AddHostedService<CommandLine>();
         services.AddSingleton<ITasksRepository, JsonFileTasksRepository>();
+        services.AddKeyedSingleton<ICommand, AddTaskCommand>("AddTask");
     }
 }
