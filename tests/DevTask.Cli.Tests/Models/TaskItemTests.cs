@@ -15,8 +15,8 @@ public class TaskItemTests
         typeof(TaskItem).GetProperties(BindingFlags.Public | BindingFlags.Instance)
             .Should()
             .Satisfy(
-                static p => p.Name == "Id" && p.PropertyType == typeof(Guid) && p.IsInitOnly(),
-                static p => p.Name == "Title" && p.PropertyType == typeof(string) && p.IsInitOnly()
+                static p => p.Name == nameof(TaskItem.Id) && p.PropertyType == typeof(Guid) && p.IsInitOnly(),
+                static p => p.Name == nameof(TaskItem.Title) && p.PropertyType == typeof(string) && p.IsInitOnly()
             );
     }
 

@@ -1,5 +1,4 @@
 ﻿using DevTask.Cli.Commands.Abstractions;
-using DevTask.Cli.Repositories.Abstractions;
 using DevTask.Cli.Tests.TestHelpers.Extensions;
 using FluentAssertions;
 using System.Threading;
@@ -16,7 +15,7 @@ public class ICommandTests
         typeof(ICommand).GetMethods()
             .Should()
             .Satisfy(
-                m => m.Name == "ExecuteAsync"
+                m => m.Name == nameof(ICommand.ExecuteAsync)
                      && m.ReturnType == typeof(Task)
                      && m.GetParameters().AreOfExpectedTypes(new[] { typeof(string), typeof(CancellationToken) })
             );

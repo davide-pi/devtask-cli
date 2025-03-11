@@ -10,7 +10,7 @@ public sealed class AddTaskCommand : ICommand
     private readonly ITasksRepository _tasksRepository;
    
     public static readonly string Command = "add";
-    public static readonly string Description = "Add a new task to the list";
+    public static readonly string Description = "Add a new task";
 
     public AddTaskCommand(ITasksRepository tasksRepository)
     {

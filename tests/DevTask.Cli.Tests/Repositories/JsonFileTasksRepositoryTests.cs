@@ -42,7 +42,6 @@ public class JsonFileTasksRepositoryTests : IDisposable
             .BeAssignableTo(typeToInherit);
     }
 
-
     [Trait("Category", "L0")]
     [Fact]
     public void Should_DefineThePersistenceInTheJsonFile()
@@ -78,6 +77,24 @@ public class JsonFileTasksRepositoryTests : IDisposable
 
     [Trait("Category", "L0")]
     [Fact]
+    public async Task Should_TreatEmptyFileAsEmptyList_When_InsertTaskIsInvoked()
+    {
+        await File.WriteAllTextAsync(_persistenceJsonFileForTests, string.Empty);
+
+        var newTaskId = await _repository.InsertTaskAsync("Test task", CancellationToken.None);
+
+        var fileContent = await File.ReadAllTextAsync(_persistenceJsonFileForTests);
+        var tasksInFile = JsonSerializer.Deserialize<List<TaskItem>>(fileContent);
+
+        tasksInFile
+            .Should()
+            .Satisfy(
+                t => t.Id == newTaskId && t.Title == "Test task"
+            );
+    }
+
+    [Trait("Category", "L0")]
+    [Fact]
     public async Task Should_RemoveTheTaskWithTheGuid_When_DeleteTaskIsInvoked()
     {
         var expectedTaskList = new List<TaskItem>() {
@@ -100,7 +117,6 @@ public class JsonFileTasksRepositoryTests : IDisposable
                 t => expectedTaskList[2].Id == t.Id && expectedTaskList[2].Title == t.Title
             );
     }
-
 
     [Trait("Category", "L0")]
     [Fact]
@@ -130,6 +146,20 @@ public class JsonFileTasksRepositoryTests : IDisposable
 
     [Trait("Category", "L0")]
     [Fact]
+    public async Task Should_TreatEmptyFileAsEmptyList_When_DeleteTaskIsInvoked()
+    {
+        await File.WriteAllTextAsync(_persistenceJsonFileForTests, string.Empty);
+
+        await _repository.DeleteTaskAsync(Guid.NewGuid(), CancellationToken.None);
+
+        var fileContent = await File.ReadAllTextAsync(_persistenceJsonFileForTests);
+        fileContent
+            .Should()
+            .BeEmpty();
+    }
+
+    [Trait("Category", "L0")]
+    [Fact]
     public async Task Should_ReturnAllTheRegisteredTasks_When_GetAllTasksIsInvoked()
     {
         var expectedTaskList = new List<TaskItem>() {
@@ -149,5 +179,18 @@ public class JsonFileTasksRepositoryTests : IDisposable
                 t => expectedTaskList[1].Id == t.Id && expectedTaskList[1].Title == t.Title,
                 t => expectedTaskList[2].Id == t.Id && expectedTaskList[2].Title == t.Title
             );
+    }
+
+    [Trait("Category", "L0")]
+    [Fact]
+    public async Task Should_TreatEmptyFileAsEmptyList_When_GetAllTasksIsInvoked()
+    {
+        await File.WriteAllTextAsync(_persistenceJsonFileForTests, string.Empty);
+
+        var taskList = await _repository.GetAllTasksAsync(CancellationToken.None);
+
+        taskList
+            .Should()
+            .BeEmpty();
     }
 }

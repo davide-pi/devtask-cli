@@ -3,9 +3,12 @@ using DevTask.Cli.Commands.Abstractions;
 using DevTask.Cli.HostedServices;
 using DevTask.Cli.Repositories;
 using DevTask.Cli.Repositories.Abstractions;
+using DevTask.Cli.Services;
+using DevTask.Cli.Services.Abstractions;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Spectre.Console;
 using System.Threading.Tasks;
 
 namespace DevTask.Cli;
@@ -32,9 +35,14 @@ public class Program
 
     private static void ConfigureServices(HostBuilderContext context, IServiceCollection services)
     {
-        services.AddHostedService<CommandLine>();
+        services.AddSingleton(AnsiConsole.Console);
+
         services.AddSingleton<ITasksRepository, JsonFileTasksRepository>();
+        services.AddSingleton<ICliRenderer, CliRenderer>();
         services.AddKeyedSingleton<ICommand, AddTaskCommand>("AddTask");
         services.AddKeyedSingleton<ICommand, DeleteTaskCommand>("DeleteTask");
+        services.AddKeyedSingleton<ICommand, ListAllTasksCommand>("ListTasks");
+
+        services.AddHostedService<CommandLine>();
     }
 }

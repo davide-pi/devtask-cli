@@ -2,6 +2,8 @@ using DevTask.Cli.Commands;
 using DevTask.Cli.Commands.Abstractions;
 using DevTask.Cli.Repositories;
 using DevTask.Cli.Repositories.Abstractions;
+using DevTask.Cli.Services;
+using DevTask.Cli.Services.Abstractions;
 using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
 using System;
@@ -29,11 +31,13 @@ public class DependenciesInjectionTests
 
     private static readonly IEnumerable<(Type InerfaceType, Type ImplementationType, ServiceLifetime Lifetime)> _expectedInjectedTypesWithLifetimes = [
         (typeof(ITasksRepository), typeof(JsonFileTasksRepository), ServiceLifetime.Singleton),
+        (typeof(ICliRenderer), typeof(CliRenderer), ServiceLifetime.Singleton),
     ];
 
     private static readonly IEnumerable<(string Key, Type InerfaceType, Type ImplementationType, ServiceLifetime Lifetime)> _expectedInjectedKeyedTypesWithLifetimes = [
         ("AddTask", typeof(ICommand), typeof(AddTaskCommand), ServiceLifetime.Singleton),
         ("DeleteTask", typeof(ICommand), typeof(DeleteTaskCommand), ServiceLifetime.Singleton),
+        ("ListTasks", typeof(ICommand), typeof(ListAllTasksCommand), ServiceLifetime.Singleton),
     ];
 
     public static readonly IEnumerable<object[]> ExpectedInjectedTypesWithLifetimes = _expectedInjectedTypesWithLifetimes

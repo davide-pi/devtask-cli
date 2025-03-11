@@ -47,7 +47,7 @@ public class DeleteTaskCommandTests
     [Fact]
     public void Should_BeDescribedAs()
     {
-        var expectedCommandDescription = "Delete an existing task from the list by its ID";
+        var expectedCommandDescription = "Delete an existing task by its ID";
 
         var descriptionField = typeof(DeleteTaskCommand)
             .GetField("Description", BindingFlags.Public | BindingFlags.Static);

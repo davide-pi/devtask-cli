@@ -18,13 +18,13 @@ public class ITasksRepositoryTests
         typeof(ITasksRepository).GetMethods()
             .Should()
             .Satisfy(
-                m => m.Name == "InsertTaskAsync"
+                m => m.Name == nameof(ITasksRepository.InsertTaskAsync)
                      && m.ReturnType == typeof(Task<Guid>)
                      && m.GetParameters().AreOfExpectedTypes(new[] { typeof(string), typeof(CancellationToken) }),
-                m => m.Name == "DeleteTaskAsync"
+                m => m.Name == nameof(ITasksRepository.DeleteTaskAsync)
                      && m.ReturnType == typeof(Task)
                      && m.GetParameters().AreOfExpectedTypes(new[] { typeof(Guid), typeof(CancellationToken) }),
-                m => m.Name == "GetAllTasksAsync"
+                m => m.Name == nameof(ITasksRepository.GetAllTasksAsync)
                      && m.ReturnType == typeof(Task<IEnumerable<TaskItem>>)
                      && m.GetParameters().AreOfExpectedTypes(new[] { typeof(CancellationToken) })
             );

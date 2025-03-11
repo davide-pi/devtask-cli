@@ -10,7 +10,7 @@ public sealed class DeleteTaskCommand : ICommand
     private readonly ITasksRepository _tasksRepository;
     
     public static readonly string Command = "delete";
-    public static readonly string Description = "Delete an existing task from the list by its ID";
+    public static readonly string Description = "Delete an existing task by its ID";
 
     public DeleteTaskCommand(ITasksRepository tasksRepository)
     {
