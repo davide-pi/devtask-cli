@@ -1,25 +1,26 @@
 using DevTask.Cli.HostedServices;
-using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using System;
-using System.Linq;
-using System.Reflection;
 
 namespace DevTask.Cli.Tests.HostedServicesTests;
 
 public class CommandLineTests
 {
-    private static readonly Assembly _assembly = Assembly.Load("DevTask.Cli");
+    private readonly CommandLine _cli;
+
+    public CommandLineTests()
+    {
+        _cli = new ServiceCollection()
+            .AddScoped<CommandLine>()
+            .BuildServiceProvider()
+            .GetRequiredService<CommandLine>();
+    }
 
     [Trait("Category", "L0")]
-    [Theory]
-    [InlineData(typeof(IHostedService))]
-    public void Should_InheritFrom(Type typeToInherit)
+    [Fact]
+    public void Should_InheritFromICommand()
     {
-        typeof(CommandLine)
-            .Should()
-            .BeAssignableTo(typeToInherit);
+        Assert.IsAssignableFrom<IHostedService>(_cli);
     }
 
     [Trait("Category", "L0")]
@@ -32,8 +33,6 @@ public class CommandLineTests
 
         var hostedServices = services.GetServices<IHostedService>();
 
-        hostedServices.SingleOrDefault(s => s.GetType() == typeof(CommandLine))
-            .Should()
-            .NotBeNull();
+        Assert.Single(hostedServices);
     }
 }

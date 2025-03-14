@@ -1,8 +1,9 @@
 ﻿using DevTask.Cli.Models;
 using DevTask.Cli.Services.Abstractions;
-using DevTask.Cli.Tests.TestHelpers.Extensions;
-using FluentAssertions;
+using System;
 using System.Collections.Generic;
+using System.Linq;
+using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -10,16 +11,27 @@ namespace DevTask.Cli.Tests.Services.Abstractions;
 
 public class ICliRendererTests
 {
+    public static IEnumerable<object[]> ExpectedMethods = [
+        [nameof(ICliRenderer.RenderTaskListAsync), typeof(Task), new Type[] { typeof(IEnumerable<TaskItem>), typeof(CancellationToken) }]
+    ];
+
     [Trait("Category", "L0")]
     [Fact]
-    public void Should_DefineTheFollowingMethods()
+    public void Should_DefineExpectedNumberOfMethods()
     {
-        typeof(ICliRenderer).GetMethods()
-            .Should()
-            .Satisfy(
-                m => m.Name == nameof(ICliRenderer.RenderTaskListAsync)
-                     && m.ReturnType == typeof(Task)
-                     && m.GetParameters().AreOfExpectedTypes(new[] { typeof(IEnumerable<TaskItem>), typeof(CancellationToken) })
-            );
+        var properties = typeof(ICliRenderer).GetMethods(BindingFlags.Public | BindingFlags.Instance);
+
+        Assert.Equal(ExpectedMethods.Count(), properties.Length);
+    }
+
+    [Trait("Category", "L0")]
+    [Theory]
+    [MemberData(nameof(ExpectedMethods))]
+    public void Should_DefineTheMethodAs(string methodName, Type expectedReturnType, Type[] parameters)
+    {
+        var method = typeof(ICliRenderer).GetMethod(methodName, BindingFlags.Public | BindingFlags.Instance, parameters)!;
+
+        Assert.NotNull(method);
+        Assert.Equal(expectedReturnType, method.ReturnType);
     }
 }

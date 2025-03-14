@@ -1,8 +1,9 @@
 ﻿using DevTask.Cli.Commands;
 using DevTask.Cli.Commands.Abstractions;
 using DevTask.Cli.Repositories.Abstractions;
-using FluentAssertions;
-using Moq;
+using Microsoft.Extensions.DependencyInjection;
+using NSubstitute;
+using NSubstitute.ReceivedExtensions;
 using System;
 using System.Reflection;
 using System.Threading;
@@ -11,15 +12,25 @@ using System.Threading.Tasks;
 namespace DevTask.Cli.Tests.Commands;
 public class AddTaskCommandTests
 {
+    private readonly ITasksRepository _mockedTasksRepository;
+    private readonly AddTaskCommand _command;
+
+    public AddTaskCommandTests()
+    {
+        _mockedTasksRepository = Substitute.For<ITasksRepository>();
+
+        _command = new ServiceCollection()
+            .AddScoped(_ => _mockedTasksRepository)
+            .AddScoped<AddTaskCommand>()
+            .BuildServiceProvider()
+            .GetRequiredService<AddTaskCommand>();
+    }
 
     [Trait("Category", "L0")]
-    [Theory]
-    [InlineData(typeof(ICommand))]
-    public void Should_InheritFrom(Type typeToInherit)
+    [Fact]
+    public void Should_InheritFromICommand()
     {
-        typeof(AddTaskCommand)
-            .Should()
-            .BeAssignableTo(typeToInherit);
+        Assert.IsAssignableFrom<ICommand>(_command);
     }
 
     [Trait("Category", "L0")]
@@ -28,55 +39,37 @@ public class AddTaskCommandTests
     {
         var expectedCommand = "add";
 
-        var commandField = typeof(AddTaskCommand)
+        var commandField = _command.GetType()
             .GetField("Command", BindingFlags.Public | BindingFlags.Static);
 
-        commandField!.IsInitOnly
-            .Should()
-            .BeTrue();
-
-        commandField!
-            .GetValue(null)
-            .Should()
-            .BeOfType<string>()
-            .And
-            .Be(expectedCommand);
+        Assert.True(commandField!.IsInitOnly, "Field should be init only");
+        Assert.IsType<string>(commandField.GetValue(null));
+        Assert.Equal(expectedCommand, commandField.GetValue(null));
     }
 
     [Trait("Category", "L0")]
     [Fact]
     public void Should_BeDescribedAs()
     {
-        var expectedCommandDescription = "Add a new task";
-
-        var descriptionField = typeof(AddTaskCommand)
+        var descriptionField = _command.GetType()
             .GetField("Description", BindingFlags.Public | BindingFlags.Static);
 
-        descriptionField!.IsInitOnly
-            .Should()
-            .BeTrue();
+        Assert.True(descriptionField!.IsInitOnly, "Field should be init only");
 
-        descriptionField!
-            .GetValue(null)
-            .Should()
-            .BeOfType<string>()
-            .And
-            .Be(expectedCommandDescription);
+        var descriptionValue = descriptionField!.GetValue(null);
+
+        Assert.IsAssignableFrom<string>(descriptionValue);
+        Assert.Equal("Add a new task", descriptionValue);
     }
 
     [Trait("Category", "L0")]
     [Fact]
     public async Task Should_AddANewTask_When_Executed()
     {
-        var tasksRepositoryMock = new Mock<ITasksRepository>();
+        await _command.ExecuteAsync("test title", CancellationToken.None);
 
-        var command = new AddTaskCommand(tasksRepositoryMock.Object);
-
-        await command.ExecuteAsync("test title", CancellationToken.None);
-
-        tasksRepositoryMock.Verify(
-            r => r.InsertTaskAsync("test title", It.IsAny<CancellationToken>()),
-            Times.Once);
+        await _mockedTasksRepository.Received(Quantity.Exactly(1))
+            .InsertTaskAsync("test title", Arg.Any<CancellationToken>());
     }
 
     [Trait("Category", "L0")]
@@ -85,20 +78,10 @@ public class AddTaskCommandTests
     [InlineData("")]
     public async Task Should_ThrowArgumentException_When_ExecutedWithNullOrEmptyArgument(string? commandArgument)
     {
-        var tasksRepositoryMock = new Mock<ITasksRepository>();
-
-        var command = new AddTaskCommand(tasksRepositoryMock.Object);
-
 #pragma warning disable CS8604 // Possible null reference argument.
-        var action = async () => await command.ExecuteAsync(commandArgument, CancellationToken.None);
+        var action = async () => await _command.ExecuteAsync(commandArgument, CancellationToken.None);
 #pragma warning restore CS8604 // Possible null reference argument.
 
-        ( await action
-            .Should()
-            .ThrowExactlyAsync<ArgumentNullException>() )
-            .And
-            .ParamName
-            .Should()
-            .Be("commandArgument");
+        await Assert.ThrowsAsync<ArgumentNullException>("commandArgument", action);
     }
 }

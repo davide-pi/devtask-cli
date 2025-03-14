@@ -1,8 +1,9 @@
 ﻿using DevTask.Cli.Commands;
 using DevTask.Cli.Commands.Abstractions;
 using DevTask.Cli.Repositories.Abstractions;
-using FluentAssertions;
-using Moq;
+using Microsoft.Extensions.DependencyInjection;
+using NSubstitute;
+using NSubstitute.ReceivedExtensions;
 using System;
 using System.Reflection;
 using System.Threading;
@@ -11,15 +12,25 @@ using System.Threading.Tasks;
 namespace DevTask.Cli.Tests.Commands;
 public class DeleteTaskCommandTests
 {
+    private readonly ITasksRepository _mockedTasksRepository;
+    private readonly DeleteTaskCommand _command;
+
+    public DeleteTaskCommandTests()
+    {
+        _mockedTasksRepository = Substitute.For<ITasksRepository>();
+
+        _command = new ServiceCollection()
+            .AddScoped(_ => _mockedTasksRepository)
+            .AddScoped<DeleteTaskCommand>()
+            .BuildServiceProvider()
+            .GetRequiredService<DeleteTaskCommand>();
+    }
 
     [Trait("Category", "L0")]
-    [Theory]
-    [InlineData(typeof(ICommand))]
-    public void Should_InheritFrom(Type typeToInherit)
+    [Fact]
+    public void Should_InheritFromICommand()
     {
-        typeof(DeleteTaskCommand)
-            .Should()
-            .BeAssignableTo(typeToInherit);
+        Assert.IsAssignableFrom<ICommand>(_command);
     }
 
     [Trait("Category", "L0")]
@@ -28,40 +39,27 @@ public class DeleteTaskCommandTests
     {
         var expectedCommand = "delete";
 
-        var commandField = typeof(DeleteTaskCommand)
+        var commandField = _command.GetType()
             .GetField("Command", BindingFlags.Public | BindingFlags.Static);
 
-        commandField!.IsInitOnly
-            .Should()
-            .BeTrue();
-
-        commandField!
-            .GetValue(null)
-            .Should()
-            .BeOfType<string>()
-            .And
-            .Be(expectedCommand);
+        Assert.True(commandField!.IsInitOnly, "Field should be init only");
+        Assert.IsType<string>(commandField.GetValue(null));
+        Assert.Equal(expectedCommand, commandField.GetValue(null));
     }
 
     [Trait("Category", "L0")]
     [Fact]
     public void Should_BeDescribedAs()
     {
-        var expectedCommandDescription = "Delete an existing task by its ID";
-
-        var descriptionField = typeof(DeleteTaskCommand)
+        var descriptionField = _command.GetType()
             .GetField("Description", BindingFlags.Public | BindingFlags.Static);
 
-        descriptionField!.IsInitOnly
-            .Should()
-            .BeTrue();
+        Assert.True(descriptionField!.IsInitOnly, "Field should be init only");
 
-        descriptionField!
-            .GetValue(null)
-            .Should()
-            .BeOfType<string>()
-            .And
-            .Be(expectedCommandDescription);
+        var descriptionValue = descriptionField!.GetValue(null);
+
+        Assert.IsAssignableFrom<string>(descriptionValue);
+        Assert.Equal("Delete an existing task by its ID", descriptionValue);
     }
 
     [Trait("Category", "L0")]
@@ -69,15 +67,11 @@ public class DeleteTaskCommandTests
     public async Task Should_DeleteTheTask_When_Executed()
     {
         var taskId = Guid.NewGuid();
-        var tasksRepositoryMock = new Mock<ITasksRepository>();
 
-        var command = new DeleteTaskCommand(tasksRepositoryMock.Object);
+        await _command.ExecuteAsync(taskId.ToString(), CancellationToken.None);
 
-        await command.ExecuteAsync(taskId.ToString(), CancellationToken.None);
-
-        tasksRepositoryMock.Verify(
-            r => r.DeleteTaskAsync(taskId, It.IsAny<CancellationToken>()),
-            Times.Once);
+        await _mockedTasksRepository.Received(Quantity.Exactly(1))
+            .DeleteTaskAsync(taskId, Arg.Any<CancellationToken>());
     }
 
     [Trait("Category", "L0")]
@@ -86,21 +80,11 @@ public class DeleteTaskCommandTests
     [InlineData("")]
     public async Task Should_ThrowArgumentException_When_ExecutedWithNullOrEmptyArgument(string? commandArgument)
     {
-        var tasksRepositoryMock = new Mock<ITasksRepository>();
-
-        var command = new DeleteTaskCommand(tasksRepositoryMock.Object);
-
 #pragma warning disable CS8604 // Possible null reference argument.
-        var action = async () => await command.ExecuteAsync(commandArgument, CancellationToken.None);
+        var action = async () => await _command.ExecuteAsync(commandArgument, CancellationToken.None);
 #pragma warning restore CS8604 // Possible null reference argument.
 
-        ( await action
-            .Should()
-            .ThrowExactlyAsync<ArgumentNullException>() )
-            .And
-            .ParamName
-            .Should()
-            .Be("commandArgument");
+        await Assert.ThrowsAsync<ArgumentNullException>("commandArgument", action);
     }
 
 
@@ -108,20 +92,10 @@ public class DeleteTaskCommandTests
     [Fact]
     public async Task Should_ThrowArgumentException_When_ExecutedWithNonGuidArgument()
     {
-        var tasksRepositoryMock = new Mock<ITasksRepository>();
-
-        var command = new DeleteTaskCommand(tasksRepositoryMock.Object);
-
 #pragma warning disable CS8604 // Possible null reference argument.
-        var action = async () => await command.ExecuteAsync("This surely is not a Guid", CancellationToken.None);
+        var action = async () => await _command.ExecuteAsync("This surely is not a Guid", CancellationToken.None);
 #pragma warning restore CS8604 // Possible null reference argument.
 
-        ( await action
-            .Should()
-            .ThrowExactlyAsync<ArgumentException>() )
-            .And
-            .ParamName
-            .Should()
-            .Be("commandArgument");
+        await Assert.ThrowsAsync<ArgumentException>(action);
     }
 }

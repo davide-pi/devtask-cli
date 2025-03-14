@@ -1,10 +1,11 @@
 ﻿using DevTask.Cli.Models;
 using DevTask.Cli.Repositories;
 using DevTask.Cli.Repositories.Abstractions;
-using FluentAssertions;
+using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Reflection;
 using System.Text.Json;
 using System.Threading;
@@ -19,11 +20,14 @@ public class JsonFileTasksRepositoryTests : IDisposable
 
     public JsonFileTasksRepositoryTests()
     {
+        _repository = new ServiceCollection()
+            .AddScoped<JsonFileTasksRepository>()
+            .BuildServiceProvider()
+            .GetRequiredService<JsonFileTasksRepository>();
+
         _persistenceJsonFileForTests = $"devtask-cli-tasks.tests-{Guid.NewGuid()}.json";
-
-        _repository = new JsonFileTasksRepository();
-
-        _repository.GetType().GetField("_persistenceJsonFileName", BindingFlags.NonPublic | BindingFlags.Instance)!
+        _repository.GetType()
+            .GetField("_persistenceJsonFileName", BindingFlags.NonPublic | BindingFlags.Instance)!
             .SetValue(_repository, _persistenceJsonFileForTests);
     }
 
@@ -33,13 +37,10 @@ public class JsonFileTasksRepositoryTests : IDisposable
     }
 
     [Trait("Category", "L0")]
-    [Theory]
-    [InlineData(typeof(ITasksRepository))]
-    public void Should_InheritFrom(Type typeToInherit)
+    [Fact]
+    public void Should_InheritFromICommand()
     {
-        typeof(JsonFileTasksRepository)
-            .Should()
-            .BeAssignableTo(typeToInherit);
+        Assert.IsAssignableFrom<ITasksRepository>(_repository);
     }
 
     [Trait("Category", "L0")]
@@ -50,9 +51,9 @@ public class JsonFileTasksRepositoryTests : IDisposable
 
         var persistanceField = typeof(JsonFileTasksRepository)
             .GetField("_persistenceJsonFileName", BindingFlags.NonPublic | BindingFlags.Instance)!
-            .GetValue(new JsonFileTasksRepository())
-            .Should()
-            .Be(expectedJsonFileName);
+            .GetValue(new JsonFileTasksRepository());
+
+        Assert.Equal(expectedJsonFileName, persistanceField);
     }
 
     [Trait("Category", "L0")]
@@ -65,14 +66,26 @@ public class JsonFileTasksRepositoryTests : IDisposable
         var newTaskId = await _repository.InsertTaskAsync("Pass all tests!", CancellationToken.None);
 
         var fileContent = await File.ReadAllTextAsync(_persistenceJsonFileForTests);
-        var tasksInFile = JsonSerializer.Deserialize<List<TaskItem>>(fileContent);
+        var tasksInFile = JsonSerializer.Deserialize<List<TaskItem>>(fileContent)!;
 
-        tasksInFile
-            .Should()
-            .Satisfy(
-                t => t.Id == previousTasksList[0].Id && t.Title == previousTasksList[0].Title,
-                t => t.Id == newTaskId && t.Title == "Pass all tests!"
-            );
+
+        //Assert.Collection(tasksInFile,t => Assert.Multiple([
+        //        () => Assert.Equal(previousTasksList[0].Id, t.Id),
+        //        () => Assert.Equal(previousTasksList[0].Title, t.Title)
+        //    ]),
+        //    t => Assert.Multiple([
+        //        () => Assert.Equal(previousTasksList[0].Id, t.Id),
+        //        () => Assert.Equal(previousTasksList[0].Title, t.Title)
+        //    ]));
+
+        Assert.Equal(previousTasksList.Count + 1, tasksInFile.Count);
+
+        Assert.Multiple([
+            () => Assert.Equal(previousTasksList[0].Id, tasksInFile[0].Id),
+            () => Assert.Equal(previousTasksList[0].Title, tasksInFile[0].Title),
+            () => Assert.Equal(newTaskId, tasksInFile[1].Id),
+            () => Assert.Equal( "Pass all tests!", tasksInFile[1].Title)
+        ]);
     }
 
     [Trait("Category", "L0")]
@@ -84,64 +97,70 @@ public class JsonFileTasksRepositoryTests : IDisposable
         var newTaskId = await _repository.InsertTaskAsync("Test task", CancellationToken.None);
 
         var fileContent = await File.ReadAllTextAsync(_persistenceJsonFileForTests);
-        var tasksInFile = JsonSerializer.Deserialize<List<TaskItem>>(fileContent);
+        var tasksInFile = JsonSerializer.Deserialize<List<TaskItem>>(fileContent)!;
 
-        tasksInFile
-            .Should()
-            .Satisfy(
-                t => t.Id == newTaskId && t.Title == "Test task"
-            );
+        Assert.Single(tasksInFile);
+
+        Assert.Multiple([
+            () => Assert.Equal(newTaskId, tasksInFile[0].Id),
+            () => Assert.Equal( "Test task", tasksInFile[0].Title)
+        ]);
     }
 
     [Trait("Category", "L0")]
     [Fact]
     public async Task Should_RemoveTheTaskWithTheGuid_When_DeleteTaskIsInvoked()
     {
-        var expectedTaskList = new List<TaskItem>() {
+        var previousTasksList = new List<TaskItem>() {
             new(Guid.NewGuid(), "Already registered task 1"),
             new(Guid.NewGuid(), "Already registered task 2"),
             new(Guid.NewGuid(), "Already registered task 3")
         };
 
-        await File.WriteAllTextAsync(_persistenceJsonFileForTests, JsonSerializer.Serialize(expectedTaskList));
+        await File.WriteAllTextAsync(_persistenceJsonFileForTests, JsonSerializer.Serialize(previousTasksList));
 
-        await _repository.DeleteTaskAsync(expectedTaskList[1].Id, CancellationToken.None);
+        await _repository.DeleteTaskAsync(previousTasksList[1].Id, CancellationToken.None);
 
         var fileContent = await File.ReadAllTextAsync(_persistenceJsonFileForTests);
-        var tasksInFile = JsonSerializer.Deserialize<List<TaskItem>>(fileContent);
+        var tasksInFile = JsonSerializer.Deserialize<List<TaskItem>>(fileContent)!;
 
-        tasksInFile
-            .Should()
-            .Satisfy(
-                t => expectedTaskList[0].Id == t.Id && expectedTaskList[0].Title == t.Title,
-                t => expectedTaskList[2].Id == t.Id && expectedTaskList[2].Title == t.Title
-            );
+        Assert.Equal(previousTasksList.Count - 1, tasksInFile.Count);
+
+        Assert.Multiple([
+            () => Assert.Equal(previousTasksList[0].Id, tasksInFile[0].Id),
+            () => Assert.Equal(previousTasksList[0].Title, tasksInFile[0].Title),
+            () => Assert.Equal(previousTasksList[2].Id, tasksInFile[1].Id),
+            () => Assert.Equal(previousTasksList[2].Title, tasksInFile[1].Title)
+        ]);
     }
 
     [Trait("Category", "L0")]
     [Fact]
     public async Task Should_DoNothing_When_DeleteTaskIsInvokedIfTheTaskDoesNotExist()
     {
-        var expectedTaskList = new List<TaskItem>() {
+        var previousTasksList = new List<TaskItem>() {
             new(Guid.NewGuid(), "Already registered task 1"),
             new(Guid.NewGuid(), "Already registered task 2"),
             new(Guid.NewGuid(), "Already registered task 3")
         };
 
-        await File.WriteAllTextAsync(_persistenceJsonFileForTests, JsonSerializer.Serialize(expectedTaskList));
+        await File.WriteAllTextAsync(_persistenceJsonFileForTests, JsonSerializer.Serialize(previousTasksList));
 
         await _repository.DeleteTaskAsync(Guid.NewGuid(), CancellationToken.None);
 
         var fileContent = await File.ReadAllTextAsync(_persistenceJsonFileForTests);
-        var tasksInFile = JsonSerializer.Deserialize<List<TaskItem>>(fileContent);
+        var tasksInFile = JsonSerializer.Deserialize<List<TaskItem>>(fileContent)!;
 
-        tasksInFile
-            .Should()
-            .Satisfy(
-                t => expectedTaskList[0].Id == t.Id && expectedTaskList[0].Title == t.Title,
-                t => expectedTaskList[1].Id == t.Id && expectedTaskList[1].Title == t.Title,
-                t => expectedTaskList[2].Id == t.Id && expectedTaskList[2].Title == t.Title
-            );
+        Assert.Equal(previousTasksList.Count, tasksInFile.Count);
+
+        Assert.Multiple([
+            () => Assert.Equal(previousTasksList[0].Id, tasksInFile[0].Id),
+            () => Assert.Equal(previousTasksList[0].Title, tasksInFile[0].Title),
+            () => Assert.Equal(previousTasksList[1].Id, tasksInFile[1].Id),
+            () => Assert.Equal(previousTasksList[1].Title, tasksInFile[1].Title),
+            () => Assert.Equal(previousTasksList[2].Id, tasksInFile[2].Id),
+            () => Assert.Equal(previousTasksList[2].Title, tasksInFile[2].Title)
+        ]);
     }
 
     [Trait("Category", "L0")]
@@ -153,32 +172,34 @@ public class JsonFileTasksRepositoryTests : IDisposable
         await _repository.DeleteTaskAsync(Guid.NewGuid(), CancellationToken.None);
 
         var fileContent = await File.ReadAllTextAsync(_persistenceJsonFileForTests);
-        fileContent
-            .Should()
-            .BeEmpty();
+
+        Assert.Empty(fileContent);
     }
 
     [Trait("Category", "L0")]
     [Fact]
     public async Task Should_ReturnAllTheRegisteredTasks_When_GetAllTasksIsInvoked()
     {
-        var expectedTaskList = new List<TaskItem>() {
+        var previousTasksList = new List<TaskItem>() {
             new(Guid.NewGuid(), "Already registered task 1"),
             new(Guid.NewGuid(), "Already registered task 2"),
             new(Guid.NewGuid(), "Already registered task 3")
         };
 
-        await File.WriteAllTextAsync(_persistenceJsonFileForTests, JsonSerializer.Serialize(expectedTaskList));
+        await File.WriteAllTextAsync(_persistenceJsonFileForTests, JsonSerializer.Serialize(previousTasksList));
 
-        var taskList = await _repository.GetAllTasksAsync(CancellationToken.None);
+        var tasksInFile = ( await _repository.GetAllTasksAsync(CancellationToken.None) ).ToList();
 
-        taskList
-            .Should()
-            .Satisfy(
-                t => expectedTaskList[0].Id == t.Id && expectedTaskList[0].Title == t.Title,
-                t => expectedTaskList[1].Id == t.Id && expectedTaskList[1].Title == t.Title,
-                t => expectedTaskList[2].Id == t.Id && expectedTaskList[2].Title == t.Title
-            );
+        Assert.Equal(previousTasksList.Count, tasksInFile.Count);
+
+        Assert.Multiple([
+            () => Assert.Equal(previousTasksList[0].Id, tasksInFile[0].Id),
+            () => Assert.Equal(previousTasksList[0].Title, tasksInFile[0].Title),
+            () => Assert.Equal(previousTasksList[1].Id, tasksInFile[1].Id),
+            () => Assert.Equal(previousTasksList[1].Title, tasksInFile[1].Title),
+            () => Assert.Equal(previousTasksList[2].Id, tasksInFile[2].Id),
+            () => Assert.Equal(previousTasksList[2].Title, tasksInFile[2].Title)
+        ]);
     }
 
     [Trait("Category", "L0")]
@@ -189,8 +210,6 @@ public class JsonFileTasksRepositoryTests : IDisposable
 
         var taskList = await _repository.GetAllTasksAsync(CancellationToken.None);
 
-        taskList
-            .Should()
-            .BeEmpty();
+        Assert.Empty(taskList);
     }
 }

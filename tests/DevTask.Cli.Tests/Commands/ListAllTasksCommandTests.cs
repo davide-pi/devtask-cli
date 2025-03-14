@@ -3,9 +3,9 @@ using DevTask.Cli.Commands.Abstractions;
 using DevTask.Cli.Models;
 using DevTask.Cli.Repositories.Abstractions;
 using DevTask.Cli.Services.Abstractions;
-using FluentAssertions;
-using Moq;
-using Spectre.Console;
+using Microsoft.Extensions.DependencyInjection;
+using NSubstitute;
+using NSubstitute.ReceivedExtensions;
 using System;
 using System.Collections.Generic;
 using System.Reflection;
@@ -15,15 +15,28 @@ using System.Threading.Tasks;
 namespace DevTask.Cli.Tests.Commands;
 public class ListAllTasksCommandTests
 {
+    private readonly ITasksRepository _mockedTasksRepository;
+    private readonly ICliRenderer _mockedRenderer;
+    private readonly ListAllTasksCommand _command;
+
+    public ListAllTasksCommandTests()
+    {
+        _mockedTasksRepository = Substitute.For<ITasksRepository>();
+        _mockedRenderer = Substitute.For<ICliRenderer>();
+
+        _command = new ServiceCollection()
+            .AddScoped(_ => _mockedTasksRepository)
+            .AddScoped(_ => _mockedRenderer)
+            .AddScoped<ListAllTasksCommand>()
+            .BuildServiceProvider()
+            .GetRequiredService<ListAllTasksCommand>();
+    }
 
     [Trait("Category", "L0")]
-    [Theory]
-    [InlineData(typeof(ICommand))]
-    public void Should_InheritFrom(Type typeToInherit)
+    [Fact]
+    public void Should_InheritFromICommand()
     {
-        typeof(ListAllTasksCommand)
-            .Should()
-            .BeAssignableTo(typeToInherit);
+        Assert.IsAssignableFrom<ICommand>(_command);
     }
 
     [Trait("Category", "L0")]
@@ -32,40 +45,27 @@ public class ListAllTasksCommandTests
     {
         var expectedCommand = "list";
 
-        var commandField = typeof(ListAllTasksCommand)
+        var commandField = _command.GetType()
             .GetField("Command", BindingFlags.Public | BindingFlags.Static);
 
-        commandField!.IsInitOnly
-            .Should()
-            .BeTrue();
-
-        commandField!
-            .GetValue(null)
-            .Should()
-            .BeOfType<string>()
-            .And
-            .Be(expectedCommand);
+        Assert.True(commandField!.IsInitOnly, "Field should be init only");
+        Assert.IsType<string>(commandField.GetValue(null));
+        Assert.Equal(expectedCommand, commandField.GetValue(null));
     }
 
     [Trait("Category", "L0")]
     [Fact]
     public void Should_BeDescribedAs()
     {
-        var expectedCommandDescription = "List all the tasks";
-
-        var descriptionField = typeof(ListAllTasksCommand)
+        var descriptionField = _command.GetType()
             .GetField("Description", BindingFlags.Public | BindingFlags.Static);
 
-        descriptionField!.IsInitOnly
-            .Should()
-            .BeTrue();
+        Assert.True(descriptionField!.IsInitOnly, "Field should be init only");
 
-        descriptionField!
-            .GetValue(null)
-            .Should()
-            .BeOfType<string>()
-            .And
-            .Be(expectedCommandDescription);
+        var descriptionValue = descriptionField!.GetValue(null);
+
+        Assert.IsAssignableFrom<string>(descriptionValue);
+        Assert.Equal("List all the tasks", descriptionValue);
     }
 
     [Trait("Category", "L0")]
@@ -78,22 +78,17 @@ public class ListAllTasksCommandTests
                 new(Guid.NewGuid(), "Test task 2"),
                 new(Guid.NewGuid(), "Test task 3")
         };
-        var tasksRepositoryMock = new Mock<ITasksRepository>();
-        tasksRepositoryMock.Setup(r => r.GetAllTasksAsync(It.IsAny<CancellationToken>()))
-            .ReturnsAsync(testTaskList);
-        var rendererMock = new Mock<ICliRenderer>();
 
-        var command = new ListAllTasksCommand(tasksRepositoryMock.Object, rendererMock.Object);
+        _mockedTasksRepository.GetAllTasksAsync(Arg.Any<CancellationToken>())
+            .Returns(testTaskList);
 
-        await command.ExecuteAsync(null, CancellationToken.None);
+        await _command.ExecuteAsync(null, CancellationToken.None);
 
-        tasksRepositoryMock.Verify(
-            r => r.GetAllTasksAsync(It.IsAny<CancellationToken>()),
-            Times.Once);
+        await _mockedTasksRepository.Received(Quantity.Exactly(1))
+            .GetAllTasksAsync(Arg.Any<CancellationToken>());
 
-        rendererMock.Verify(
-            c => c.RenderTaskListAsync(testTaskList, CancellationToken.None),
-            Times.Once);
+        await _mockedRenderer.Received(Quantity.Exactly(1))
+            .RenderTaskListAsync(testTaskList, CancellationToken.None);
     }
 
     [Trait("Category", "L0")]
@@ -101,19 +96,13 @@ public class ListAllTasksCommandTests
     [InlineData(null)]
     [InlineData("")]
     [InlineData("test")]
-    public async Task Should_Not_ThrowArgumentException_When_ExecutedWithNullEmptyOrValorizedArgument(string? commandArgument)
+    public async Task Should_Not_ThrowArgumentException_When_ExecutedWithNullEmptyOrValuedArgument(string? commandArgument)
     {
-        var tasksRepositoryMock = new Mock<ITasksRepository>();
-        var rendererMock = new Mock<ICliRenderer>();
-
-        var command = new ListAllTasksCommand(tasksRepositoryMock.Object, rendererMock.Object);
-
 #pragma warning disable CS8604 // Possible null reference argument.
-        var action = async () => await command.ExecuteAsync(commandArgument, CancellationToken.None);
+        var action = async () => await _command.ExecuteAsync(commandArgument, CancellationToken.None);
 #pragma warning restore CS8604 // Possible null reference argument.
 
-        await action
-            .Should()
-            .NotThrowAsync();
+        var exceptions = await Record.ExceptionAsync(action);
+        Assert.Null(exceptions);
     }
 }

@@ -1,34 +1,61 @@
 ﻿using DevTask.Cli.Models;
 using DevTask.Cli.Tests.TestHelpers.Extensions;
-using FluentAssertions;
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Reflection;
 
 namespace DevTask.Cli.Tests.Models;
 
 public class TaskItemTests
 {
+    public static IEnumerable<object[]> ExpectedProperties = [
+        [nameof(TaskItem.Id), typeof(Guid), true],
+        [nameof(TaskItem.Title), typeof(string), true]
+    ];
+    public static IEnumerable<object[]> ExpectedConstructors = [
+        [new Type[] {typeof(Guid), typeof(string) }]
+    ];
+
     [Trait("Category", "L0")]
     [Fact]
-    public void Should_DefineTheFollowingProperties()
+    public void Should_DefineExpectedNumberOfProperties()
     {
-        typeof(TaskItem).GetProperties(BindingFlags.Public | BindingFlags.Instance)
-            .Should()
-            .Satisfy(
-                static p => p.Name == nameof(TaskItem.Id) && p.PropertyType == typeof(Guid) && p.IsInitOnly(),
-                static p => p.Name == nameof(TaskItem.Title) && p.PropertyType == typeof(string) && p.IsInitOnly()
-            );
+        var properties = typeof(TaskItem).GetProperties(BindingFlags.Public | BindingFlags.Instance);
+
+        Assert.Equal(ExpectedProperties.Count(), properties.Length);
+    }
+
+    [Trait("Category", "L0")]
+    [Theory]
+    [MemberData(nameof(ExpectedProperties))]
+    public void Should_DefineThePropertyAs(string propertyName, Type expectedPropertyType, bool shouldBeInitOnly)
+    {
+        var property = typeof(TaskItem).GetProperty(propertyName, BindingFlags.Public | BindingFlags.Instance)!;
+
+        Assert.Multiple([
+            () => Assert.Equal(expectedPropertyType, property.PropertyType),
+            () => Assert.Equal(shouldBeInitOnly, property.IsInitOnly()),
+        ]);
     }
 
     [Trait("Category", "L0")]
     [Fact]
-    public void Should_DefineTheFollowingPublicConstrutors()
+    public void Should_DefineExpectedNumberOfConstructors()
     {
-        typeof(TaskItem).GetConstructors(BindingFlags.Public | BindingFlags.Instance)
-            .Should()
-            .Satisfy(
-                static p => p.GetParameters().AreOfExpectedTypes(new[] { typeof(Guid), typeof(string) })
-            );
+        var constructors = typeof(TaskItem).GetConstructors(BindingFlags.Public | BindingFlags.Instance);
+
+        Assert.Equal(ExpectedConstructors.Count(), constructors.Length);
+    }
+
+    [Trait("Category", "L0")]
+    [Theory]
+    [MemberData(nameof(ExpectedConstructors))]
+    public void Should_DefineTheConstructorAS(Type[] parameters)
+    {
+        var constructor = typeof(TaskItem).GetConstructor(BindingFlags.Public | BindingFlags.Instance, parameters);
+
+        Assert.NotNull(constructor);
     }
 
     [Trait("Category", "L0")]
@@ -41,12 +68,6 @@ public class TaskItemTests
         var action = () => new TaskItem(Guid.NewGuid(), title);
 #pragma warning restore CS8604 // Possible null reference argument.
 
-        action
-            .Should()
-            .ThrowExactly<ArgumentNullException>()
-            .And
-            .ParamName
-            .Should()
-            .Be("title");
+        Assert.Throws<ArgumentNullException>("title", action);
     }
 }

@@ -1,4 +1,3 @@
-using FluentAssertions;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -27,8 +26,7 @@ public class ClassesTests
     [MemberData(nameof(ExpectedSealedClasses))]
     public void Sould_BeSealedByDefault(Type classType)
     {
-        classType.IsSealed
-            .Should()
-            .BeTrue();
+
+        Assert.True(classType.IsSealed);
     }
 }

@@ -4,7 +4,6 @@ using DevTask.Cli.Repositories;
 using DevTask.Cli.Repositories.Abstractions;
 using DevTask.Cli.Services;
 using DevTask.Cli.Services.Abstractions;
-using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Collections.Generic;
@@ -42,7 +41,7 @@ public class DependenciesInjectionTests
 
     public static readonly IEnumerable<object[]> ExpectedInjectedTypesWithLifetimes = _expectedInjectedTypesWithLifetimes
         .Select<(Type InerfaceType, Type ImplementationType, ServiceLifetime Lifetime), object[]>(t => [t.InerfaceType, t.ImplementationType, t.Lifetime]);
-    
+
     public static readonly IEnumerable<object[]> ExpectedInjectedKeyedTypesWithLifetimes = _expectedInjectedKeyedTypesWithLifetimes
         .Select<(string Key, Type InerfaceType, Type ImplementationType, ServiceLifetime Lifetime), object[]>(t => [t.Key, t.InerfaceType, t.ImplementationType, t.Lifetime]);
 
@@ -71,9 +70,7 @@ public class DependenciesInjectionTests
             .Where(t => !t.GetInterfaces().Any(i => expectedInjectedTypes.Contains(i)))
             .Where(t => !t.GetInterfaces().Any(i => expectedInjectedKeyedTypes.Contains(i)));
 
-        forgottenTypes
-            .Should()
-            .BeEmpty();
+        Assert.Empty(forgottenTypes);
     }
 
     [Trait("Category", "L0")]
@@ -84,11 +81,8 @@ public class DependenciesInjectionTests
         var scope = _services.CreateScope();
         var resolved = scope.ServiceProvider.GetService(expectedInjectedType);
 
-        resolved
-            .Should()
-            .NotBeNull()
-            .And
-            .BeAssignableTo(expectedImplementationType);
+        Assert.NotNull(resolved);
+        Assert.IsAssignableFrom(expectedImplementationType, resolved);
 
         var resolved2 = scope.ServiceProvider.GetService(expectedInjectedType);
 
@@ -106,11 +100,8 @@ public class DependenciesInjectionTests
         var scope = _services.CreateScope();
         var resolved = scope.ServiceProvider.GetRequiredKeyedService(expectedInjectedType, expectedKey);
 
-        resolved
-            .Should()
-            .NotBeNull()
-            .And
-            .BeAssignableTo(expectedImplementationType);
+        Assert.NotNull(resolved);
+        Assert.IsAssignableFrom(expectedImplementationType, resolved);
 
         var resolved2 = scope.ServiceProvider.GetRequiredKeyedService(expectedInjectedType, expectedKey);
 
@@ -124,27 +115,23 @@ public class DependenciesInjectionTests
         switch (lifetime)
         {
             case ServiceLifetime.Singleton:
-                resolved
-                    .Should()
-                    .Be(resolved2)
-                    .And
-                    .Be(resolvedNewScope);
-                break;
+                {
+                    Assert.Equal(resolved2, resolved);
+                    Assert.Equal(resolvedNewScope, resolved);
+                    break;
+                }
             case ServiceLifetime.Scoped:
-                resolved
-                    .Should()
-                    .Be(resolved2)
-                    .And
-                    .NotBe(resolvedNewScope);
-                break;
-
+                {
+                    Assert.Equal(resolved2, resolved);
+                    Assert.NotEqual(resolvedNewScope, resolved);
+                    break;
+                }
             case ServiceLifetime.Transient:
-                resolved
-                    .Should()
-                    .NotBe(resolved2)
-                    .And
-                    .NotBe(resolvedNewScope);
-                break;
+                {
+                    Assert.NotEqual(resolved2, resolved);
+                    Assert.NotEqual(resolvedNewScope, resolved);
+                    break;
+                }
             default:
                 throw new NotImplementedException($"Lifetime {lifetime} is not supported yet");
         }

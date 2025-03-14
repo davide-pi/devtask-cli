@@ -1,33 +1,42 @@
-﻿using DevTask.Cli.Repositories.Abstractions;
-using DevTask.Cli.Repositories;
-using System;
-using DevTask.Cli.Services.Abstractions;
-using FluentAssertions;
+﻿using DevTask.Cli.Models;
 using DevTask.Cli.Services;
-using DevTask.Cli.Models;
-using System.Collections.Generic;
+using DevTask.Cli.Services.Abstractions;
+using Microsoft.Extensions.DependencyInjection;
+using NSubstitute;
+using NSubstitute.ReceivedExtensions;
 using Spectre.Console;
-using Moq;
-using System.Threading.Tasks;
-using System.Linq;
+using System;
+using System.Collections.Generic;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace DevTask.Cli.Tests.Services;
 public class CliRendererTests
 {
-    [Trait("Category", "L0")]
-    [Theory]
-    [InlineData(typeof(ICliRenderer))]
-    public void Should_InheritFrom(Type typeToInherit)
+    private readonly IAnsiConsole _mockedConsole;
+    private readonly CliRenderer _renderer;
+
+    public CliRendererTests()
     {
-        typeof(CliRenderer)
-            .Should()
-            .BeAssignableTo(typeToInherit);
+        _mockedConsole = Substitute.For<IAnsiConsole>();
+
+        _renderer = new ServiceCollection()
+            .AddScoped(_ => _mockedConsole)
+            .AddScoped<CliRenderer>()
+            .BuildServiceProvider()
+            .GetRequiredService<CliRenderer>();
     }
 
     [Trait("Category", "L0")]
     [Fact]
-    public async Task Should_DrawATableWithAllTasks_When_RenderTaskListIsExecutedAsync()
+    public void Should_InheritFromICommand()
+    {
+        Assert.IsAssignableFrom<ICliRenderer>(_renderer);
+    }
+
+    [Trait("Category", "L0")]
+    [Fact]
+    public async Task Should_DrawATableWithAllTasks_When_RenderTaskListIsExecuted()
     {
         var testTaskList = new List<TaskItem>()
         {
@@ -36,18 +45,12 @@ public class CliRendererTests
                 new(Guid.NewGuid(), "Test task 3")
         };
 
-        var consoleMock = new Mock<IAnsiConsole>();
+        await _renderer.RenderTaskListAsync(testTaskList, CancellationToken.None);
 
-        var renderer = new CliRenderer(consoleMock.Object);
+        _mockedConsole.Received(1)
+            .Write(Arg.Any<Table>());
 
-        await renderer.RenderTaskListAsync(testTaskList, CancellationToken.None);
-
-        consoleMock.Verify(
-            c => c.Write(It.IsAny<Table>()));
-
-        consoleMock.Verify(
-            c => c.Write(It.Is<Table>(t => t.Columns.Count == 2 && t.Rows.Count == testTaskList.Count)),
-            Times.Once);
+        _mockedConsole.Received(1)
+            .Write(Arg.Is<Table>(t => t.Columns.Count == 2 && t.Rows.Count == testTaskList.Count));
     }
-
 }
