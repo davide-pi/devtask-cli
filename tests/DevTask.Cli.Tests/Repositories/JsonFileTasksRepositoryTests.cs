@@ -188,7 +188,7 @@ public class JsonFileTasksRepositoryTests : IDisposable
 
         await File.WriteAllTextAsync(_persistenceJsonFileForTests, JsonSerializer.Serialize(previousTasksList));
 
-        var tasksInFile = ( await _repository.GetAllTasksAsync(CancellationToken.None) ).ToList();
+        var tasksInFile = (await _repository.GetAllTasksAsync(CancellationToken.None)).ToList();
 
         Assert.Equal(previousTasksList.Count, tasksInFile.Count);
 

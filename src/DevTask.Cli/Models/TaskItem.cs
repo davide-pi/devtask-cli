@@ -8,7 +8,7 @@ public sealed class TaskItem
 
     public TaskItem(Guid id, string title)
     {
-        if(string.IsNullOrWhiteSpace(title))
+        if (string.IsNullOrWhiteSpace(title))
         {
             throw new ArgumentNullException(nameof(title));
         }
