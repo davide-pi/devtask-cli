@@ -16,6 +16,20 @@ public sealed class CliRenderer : ICliRenderer
         _console = console;
     }
 
+    public Task<string?> AskUserForInputAsync(CancellationToken cancellationToken)
+    {
+        var userInput = _console.Ask<string?>(">:");
+
+        return Task.FromResult(userInput);
+    }
+
+    public Task RenderMessageAsync(string message, CancellationToken cancellationToken)
+    {
+        _console.WriteLine(message);
+
+        return Task.CompletedTask;
+    }
+
     public Task RenderTaskListAsync(IEnumerable<TaskItem> tasks, CancellationToken cancellationToken)
     {
         var table = new Table();

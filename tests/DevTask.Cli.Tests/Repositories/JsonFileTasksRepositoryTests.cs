@@ -60,7 +60,9 @@ public class JsonFileTasksRepositoryTests : IDisposable
     [Fact]
     public async Task Should_InsertNewTask_When_InsertTaskIsInvoked()
     {
-        var previousTasksList = new List<TaskItem>() { new(Guid.NewGuid(), "Already registered task") };
+        var previousTasksList = new List<TaskItem>() { 
+            new(Guid.NewGuid(), "Already registered task") 
+        };
         await File.WriteAllTextAsync(_persistenceJsonFileForTests, JsonSerializer.Serialize(previousTasksList));
 
         var newTaskId = await _repository.InsertTaskAsync("Pass all tests!", CancellationToken.None);
@@ -68,24 +70,14 @@ public class JsonFileTasksRepositoryTests : IDisposable
         var fileContent = await File.ReadAllTextAsync(_persistenceJsonFileForTests);
         var tasksInFile = JsonSerializer.Deserialize<List<TaskItem>>(fileContent)!;
 
-
-        //Assert.Collection(tasksInFile,t => Assert.Multiple([
-        //        () => Assert.Equal(previousTasksList[0].Id, t.Id),
-        //        () => Assert.Equal(previousTasksList[0].Title, t.Title)
-        //    ]),
-        //    t => Assert.Multiple([
-        //        () => Assert.Equal(previousTasksList[0].Id, t.Id),
-        //        () => Assert.Equal(previousTasksList[0].Title, t.Title)
-        //    ]));
-
-        Assert.Equal(previousTasksList.Count + 1, tasksInFile.Count);
-
-        Assert.Multiple([
-            () => Assert.Equal(previousTasksList[0].Id, tasksInFile[0].Id),
-            () => Assert.Equal(previousTasksList[0].Title, tasksInFile[0].Title),
-            () => Assert.Equal(newTaskId, tasksInFile[1].Id),
-            () => Assert.Equal( "Pass all tests!", tasksInFile[1].Title)
-        ]);
+        Assert.Collection(tasksInFile, t => Assert.Multiple([
+                () => Assert.Equal(previousTasksList[0].Id, t.Id),
+                () => Assert.Equal(previousTasksList[0].Title, t.Title)
+            ]),
+            t => Assert.Multiple([
+                () => Assert.Equal(newTaskId, t.Id),
+                () => Assert.Equal("Pass all tests!", t.Title)
+            ]));
     }
 
     [Trait("Category", "L0")]
@@ -99,12 +91,11 @@ public class JsonFileTasksRepositoryTests : IDisposable
         var fileContent = await File.ReadAllTextAsync(_persistenceJsonFileForTests);
         var tasksInFile = JsonSerializer.Deserialize<List<TaskItem>>(fileContent)!;
 
-        Assert.Single(tasksInFile);
-
-        Assert.Multiple([
-            () => Assert.Equal(newTaskId, tasksInFile[0].Id),
-            () => Assert.Equal( "Test task", tasksInFile[0].Title)
-        ]);
+        
+        Assert.Collection(tasksInFile, t => Assert.Multiple([
+                () => Assert.Equal(newTaskId, t.Id),
+                () => Assert.Equal("Test task", t.Title)
+            ]));
     }
 
     [Trait("Category", "L0")]
@@ -124,14 +115,14 @@ public class JsonFileTasksRepositoryTests : IDisposable
         var fileContent = await File.ReadAllTextAsync(_persistenceJsonFileForTests);
         var tasksInFile = JsonSerializer.Deserialize<List<TaskItem>>(fileContent)!;
 
-        Assert.Equal(previousTasksList.Count - 1, tasksInFile.Count);
-
-        Assert.Multiple([
-            () => Assert.Equal(previousTasksList[0].Id, tasksInFile[0].Id),
-            () => Assert.Equal(previousTasksList[0].Title, tasksInFile[0].Title),
-            () => Assert.Equal(previousTasksList[2].Id, tasksInFile[1].Id),
-            () => Assert.Equal(previousTasksList[2].Title, tasksInFile[1].Title)
-        ]);
+        Assert.Collection(tasksInFile, t => Assert.Multiple([
+                () => Assert.Equal(previousTasksList[0].Id, t.Id),
+                () => Assert.Equal(previousTasksList[0].Title, t.Title)
+            ]),
+            t => Assert.Multiple([
+                () => Assert.Equal(previousTasksList[2].Id, t.Id),
+                () => Assert.Equal(previousTasksList[2].Title, t.Title)
+            ]));
     }
 
     [Trait("Category", "L0")]
@@ -151,16 +142,18 @@ public class JsonFileTasksRepositoryTests : IDisposable
         var fileContent = await File.ReadAllTextAsync(_persistenceJsonFileForTests);
         var tasksInFile = JsonSerializer.Deserialize<List<TaskItem>>(fileContent)!;
 
-        Assert.Equal(previousTasksList.Count, tasksInFile.Count);
-
-        Assert.Multiple([
-            () => Assert.Equal(previousTasksList[0].Id, tasksInFile[0].Id),
-            () => Assert.Equal(previousTasksList[0].Title, tasksInFile[0].Title),
-            () => Assert.Equal(previousTasksList[1].Id, tasksInFile[1].Id),
-            () => Assert.Equal(previousTasksList[1].Title, tasksInFile[1].Title),
-            () => Assert.Equal(previousTasksList[2].Id, tasksInFile[2].Id),
-            () => Assert.Equal(previousTasksList[2].Title, tasksInFile[2].Title)
-        ]);
+        Assert.Collection(tasksInFile, t => Assert.Multiple([
+                () => Assert.Equal(previousTasksList[0].Id, t.Id),
+                () => Assert.Equal(previousTasksList[0].Title, t.Title)
+            ]),
+            t => Assert.Multiple([
+                () => Assert.Equal(previousTasksList[1].Id, t.Id),
+                () => Assert.Equal(previousTasksList[1].Title, t.Title)
+            ]),
+            t => Assert.Multiple([
+                () => Assert.Equal(previousTasksList[2].Id, t.Id),
+                () => Assert.Equal(previousTasksList[2].Title, t.Title)
+            ]));
     }
 
     [Trait("Category", "L0")]
@@ -190,16 +183,18 @@ public class JsonFileTasksRepositoryTests : IDisposable
 
         var tasksInFile = (await _repository.GetAllTasksAsync(CancellationToken.None)).ToList();
 
-        Assert.Equal(previousTasksList.Count, tasksInFile.Count);
-
-        Assert.Multiple([
-            () => Assert.Equal(previousTasksList[0].Id, tasksInFile[0].Id),
-            () => Assert.Equal(previousTasksList[0].Title, tasksInFile[0].Title),
-            () => Assert.Equal(previousTasksList[1].Id, tasksInFile[1].Id),
-            () => Assert.Equal(previousTasksList[1].Title, tasksInFile[1].Title),
-            () => Assert.Equal(previousTasksList[2].Id, tasksInFile[2].Id),
-            () => Assert.Equal(previousTasksList[2].Title, tasksInFile[2].Title)
-        ]);
+        Assert.Collection(tasksInFile, t => Assert.Multiple([
+                () => Assert.Equal(previousTasksList[0].Id, t.Id),
+                () => Assert.Equal(previousTasksList[0].Title, t.Title)
+            ]),
+            t => Assert.Multiple([
+                () => Assert.Equal(previousTasksList[1].Id, t.Id),
+                () => Assert.Equal(previousTasksList[1].Title, t.Title)
+            ]),
+            t => Assert.Multiple([
+                () => Assert.Equal(previousTasksList[2].Id, t.Id),
+                () => Assert.Equal(previousTasksList[2].Title, t.Title)
+            ]));
     }
 
     [Trait("Category", "L0")]

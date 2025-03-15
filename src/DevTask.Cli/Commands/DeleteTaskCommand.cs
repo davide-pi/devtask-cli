@@ -17,7 +17,7 @@ public sealed class DeleteTaskCommand : ICommand
         _tasksRepository = tasksRepository;
     }
 
-    public async Task ExecuteAsync(string commandArgument, CancellationToken cancellationToken)
+    public async Task ExecuteAsync(string? commandArgument, CancellationToken cancellationToken)
     {
         if (string.IsNullOrWhiteSpace(commandArgument))
         {

@@ -5,5 +5,5 @@ namespace DevTask.Cli.Commands.Abstractions;
 
 public interface ICommand
 {
-    Task ExecuteAsync(string commandArgument, CancellationToken cancellationToken);
+    Task ExecuteAsync(string? commandArgument, CancellationToken cancellationToken);
 }
