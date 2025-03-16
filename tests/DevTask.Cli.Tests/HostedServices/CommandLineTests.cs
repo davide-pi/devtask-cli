@@ -26,6 +26,7 @@ public class CommandLineTests
     private readonly ICommand _mockedAddTaskCommand;
     private readonly ICommand _mockedDeleteTaskCommand;
     private readonly ICommand _mockedListAllTasksCommand;
+    private readonly ICommand _mockedClearCommand;
 
     public CommandLineTests()
     {
@@ -33,12 +34,14 @@ public class CommandLineTests
         _mockedAddTaskCommand = Substitute.For<ICommand>();
         _mockedDeleteTaskCommand = Substitute.For<ICommand>();
         _mockedListAllTasksCommand = Substitute.For<ICommand>();
+        _mockedClearCommand = Substitute.For<ICommand>();
 
         _cli = new ServiceCollection()
             .AddScoped(_ => _mockedRenderer)
             .AddKeyedScoped("AddTask", (_, _) => _mockedAddTaskCommand)
             .AddKeyedScoped("DeleteTask", (_, _) => _mockedDeleteTaskCommand)
             .AddKeyedScoped("ListTasks", (_, _) => _mockedListAllTasksCommand)
+            .AddKeyedScoped("Clear", (_, _) => _mockedClearCommand)
             .AddScoped<CommandLine>()
             .BuildServiceProvider()
             .GetRequiredService<CommandLine>();
@@ -173,5 +176,19 @@ public class CommandLineTests
 
         await _mockedRenderer.Received(Quantity.Exactly(1))
             .RenderMessageAsync("Command not found", Arg.Any<CancellationToken>());
+    }
+
+
+    [Trait("Category", "L0")]
+    [Fact]
+    public async Task Should_InvokeTheClearCommand_When_ClearCommandIsInserted()
+    {
+        _mockedRenderer.AskUserForInputAsync(Arg.Any<CancellationToken>())
+            .Returns("clear", "exit");
+
+        await _cli.StartAsync(CancellationToken.None);
+
+        await _mockedClearCommand.Received(Quantity.Exactly(1))
+            .ExecuteAsync(null, Arg.Any<CancellationToken>());
     }
 }

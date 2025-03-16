@@ -1,4 +1,5 @@
-﻿using DevTask.Cli.Commands.Abstractions;
+﻿using DevTask.Cli.Commands;
+using DevTask.Cli.Commands.Abstractions;
 using DevTask.Cli.Services.Abstractions;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -14,17 +15,20 @@ public sealed class CommandLine : IHostedService
     private readonly ICommand _addTaskCommand;
     private readonly ICommand _deleteTaskCommand;
     private readonly ICommand _listAllTasksCommand;
+    private readonly ICommand _clearCommand;
 
     public CommandLine(
         ICliRenderer renderer,
         [FromKeyedServices("AddTask")] ICommand addTaskCommand,
         [FromKeyedServices("DeleteTask")] ICommand deleteTaskCommand,
-        [FromKeyedServices("ListTasks")] ICommand listAllTasksCommand)
+        [FromKeyedServices("ListTasks")] ICommand listAllTasksCommand,
+        [FromKeyedServices("Clear")] ICommand clearCommand)
     {
         _renderer = renderer;
         _addTaskCommand = addTaskCommand;
         _deleteTaskCommand = deleteTaskCommand;
         _listAllTasksCommand = listAllTasksCommand;
+        _clearCommand = clearCommand;
     }
 
     public async Task StartAsync(CancellationToken cancellationToken)
@@ -34,7 +38,7 @@ public sealed class CommandLine : IHostedService
         do
         {
             var userInput = await _renderer.AskUserForInputAsync(cancellationToken);
-            var splittedUserInput = userInput?.Trim().Split(" ",2, System.StringSplitOptions.TrimEntries);
+            var splittedUserInput = userInput?.Trim().Split(" ", 2, System.StringSplitOptions.TrimEntries);
 
             command = splittedUserInput?[0].ToLower();
             var argument = string.Empty;
@@ -52,6 +56,9 @@ public sealed class CommandLine : IHostedService
                     break;
                 case "list":
                     await _listAllTasksCommand.ExecuteAsync(null, cancellationToken);
+                    break;
+                case "clear":
+                    await _clearCommand.ExecuteAsync(null, cancellationToken);
                     break;
 
                 default:

@@ -60,8 +60,8 @@ public class JsonFileTasksRepositoryTests : IDisposable
     [Fact]
     public async Task Should_InsertNewTask_When_InsertTaskIsInvoked()
     {
-        var previousTasksList = new List<TaskItem>() { 
-            new(Guid.NewGuid(), "Already registered task") 
+        var previousTasksList = new List<TaskItem>() {
+            new(Guid.NewGuid(), "Already registered task")
         };
         await File.WriteAllTextAsync(_persistenceJsonFileForTests, JsonSerializer.Serialize(previousTasksList));
 
@@ -91,7 +91,7 @@ public class JsonFileTasksRepositoryTests : IDisposable
         var fileContent = await File.ReadAllTextAsync(_persistenceJsonFileForTests);
         var tasksInFile = JsonSerializer.Deserialize<List<TaskItem>>(fileContent)!;
 
-        
+
         Assert.Collection(tasksInFile, t => Assert.Multiple([
                 () => Assert.Equal(newTaskId, t.Id),
                 () => Assert.Equal("Test task", t.Title)

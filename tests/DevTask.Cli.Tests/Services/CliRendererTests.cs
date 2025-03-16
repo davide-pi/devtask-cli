@@ -79,7 +79,6 @@ public class CliRendererTests
         Assert.Equal("Some text inserted from the user", userInput);
     }
 
-
     [Trait("Category", "L0")]
     [Fact]
     public async Task Should_RenderMessageForUser_When_RenderMessageIsExecuted()
@@ -91,5 +90,19 @@ public class CliRendererTests
         await renderer.RenderMessageAsync("My message for the user", CancellationToken.None);
 
         Assert.Matches("My message for the user(?:\r\n|\n)", fakeConsole.Output);
+    }
+
+    [Trait("Category", "L0")]
+    [Fact]
+    public async Task Should_CleanTheCli_When_ClearIsExecuted()
+    {
+        //var fakeConsole = new TestConsole();
+
+        //var renderer = new CliRenderer(fakeConsole);
+
+        await _renderer.ClearAsync(CancellationToken.None);
+
+        _mockedConsole.Received(Quantity.Exactly(1))
+            .Clear();
     }
 }

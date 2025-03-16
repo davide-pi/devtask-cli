@@ -10,4 +10,5 @@ public interface ICliRenderer
     Task RenderTaskListAsync(IEnumerable<TaskItem> tasks, CancellationToken cancellationToken);
     Task<string?> AskUserForInputAsync(CancellationToken cancellationToken);
     Task RenderMessageAsync(string message, CancellationToken cancellationToken);
+    Task ClearAsync(CancellationToken cancellationToken);
 }

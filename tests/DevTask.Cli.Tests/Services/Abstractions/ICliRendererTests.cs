@@ -14,7 +14,8 @@ public class ICliRendererTests
     public static IEnumerable<object[]> ExpectedMethods = [
         [nameof(ICliRenderer.RenderTaskListAsync), typeof(Task), new Type[] { typeof(IEnumerable<TaskItem>), typeof(CancellationToken) }],
         [nameof(ICliRenderer.AskUserForInputAsync), typeof(Task<string>), new Type[] { typeof(CancellationToken) }],
-        [nameof(ICliRenderer.RenderMessageAsync), typeof(Task), new Type[] { typeof(string), typeof(CancellationToken) }]
+        [nameof(ICliRenderer.RenderMessageAsync), typeof(Task), new Type[] { typeof(string), typeof(CancellationToken) }],
+        [nameof(ICliRenderer.ClearAsync), typeof(Task), new Type[] { typeof(CancellationToken) }]
     ];
 
     [Trait("Category", "L0")]

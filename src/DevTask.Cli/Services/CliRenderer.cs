@@ -23,6 +23,13 @@ public sealed class CliRenderer : ICliRenderer
         return Task.FromResult(userInput);
     }
 
+    public Task ClearAsync(CancellationToken cancellationToken)
+    {
+        _console.Clear();
+
+        return Task.CompletedTask;
+    }
+
     public Task RenderMessageAsync(string message, CancellationToken cancellationToken)
     {
         _console.WriteLine(message);

@@ -42,6 +42,7 @@ public class Program
         services.AddKeyedSingleton<ICommand, AddTaskCommand>("AddTask");
         services.AddKeyedSingleton<ICommand, DeleteTaskCommand>("DeleteTask");
         services.AddKeyedSingleton<ICommand, ListAllTasksCommand>("ListTasks");
+        services.AddKeyedSingleton<ICommand, ClearCommand>("Clear");
 
         services.AddHostedService<CommandLine>();
     }
